@@ -45,8 +45,8 @@ class SoftmaxModel(Model):
             self.input_placeholder
             self.labels_placeholder
         """
-        ### YOUR CODE HERE
-        ### END YOUR CODE
+        self.input_placeholder = tf.placeholder(tf.float32, shape=(Config.batch_size, Config.n_features))
+        self.labels_placeholder = tf.placeholder(tf.float32, shape=(Config.batch_size, Config.n_classes))
 
     def create_feed_dict(self, inputs_batch, labels_batch=None):
         """Creates the feed_dict for training the given step.
@@ -68,8 +68,11 @@ class SoftmaxModel(Model):
         Returns:
             feed_dict: The feed dictionary mapping from placeholders to values.
         """
-        ### YOUR CODE HERE
-        ### END YOUR CODE
+        feed_dict = dict()
+        feed_dict[self.input_placeholder] = inputs_batch
+        if labels_batch is not None:
+            feed_dict[self.labels_placeholder] = labels_batch
+
         return feed_dict
 
     def add_prediction_op(self):
@@ -89,8 +92,12 @@ class SoftmaxModel(Model):
         Returns:
             pred: A tensor of shape (batch_size, n_classes)
         """
-        ### YOUR CODE HERE
-        ### END YOUR CODE
+
+        self.b = tf.Variable(tf.zeros([Config.n_classes]))
+        b = tf.expand_dims(self.b, 0)
+        self.W = tf.Variable(tf.zeros([Config.n_features, Config.n_classes]))
+        pred = softmax(tf.matmul(self.input_placeholder, self.W) + b)
+
         return pred
 
     def add_loss_op(self, pred):
@@ -103,8 +110,7 @@ class SoftmaxModel(Model):
         Returns:
             loss: A 0-d tensor (scalar)
         """
-        ### YOUR CODE HERE
-        ### END YOUR CODE
+        loss = cross_entropy_loss(self.labels_placeholder, pred)
         return loss
 
     def add_training_op(self, loss):
@@ -126,8 +132,8 @@ class SoftmaxModel(Model):
         Returns:
             train_op: The Op for training.
         """
-        ### YOUR CODE HERE
-        ### END YOUR CODE
+        opt = tf.train.GradientDescentOptimizer(learning_rate=Config.lr)
+        train_op = opt.minimize(loss, var_list= [self.W, self.b])
         return train_op
 
     def run_epoch(self, sess, inputs, labels):
