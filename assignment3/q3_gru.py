@@ -88,8 +88,18 @@ class SequencePredictor(Model):
 
         x = self.inputs_placeholder
         ### YOUR CODE HERE (~2-3 lines)
-        outputs, state = tf.nn.dynamic_rnn(cell, x, dtype=tf.float32)
-        preds = tf.nn.sigmoid(state)
+        inputs = [x[:, t, :] for t in range(20)]
+        #outputs, h = tf.nn.static_rnn(cell, inputs, dtype=tf.float32, initial_state=tf.zeros([100, cell.state_size]))
+        # outputs, h = tf.nn.dynamic_rnn(cell, x, dtype=tf.float32, parallel_iterations=1)
+        with tf.variable_scope("rnn"):
+             h = tf.zeros([100, cell.state_size], dtype=tf.float32)
+             ### END YOUR CODE
+
+             for time_step in range(20):
+                 if time_step > 0:
+                     tf.get_variable_scope().reuse_variables()
+                 output, h = cell(inputs[time_step], h)
+        preds = tf.nn.sigmoid(h)
         ### END YOUR CODE
 
         return preds #state # preds
@@ -174,10 +184,13 @@ class SequencePredictor(Model):
         prog = Progbar(target=1 + int(len(train) / self.config.batch_size))
         losses, grad_norms = [], []
         for i, batch in enumerate(minibatches(train, self.config.batch_size)):
+            if batch[0].shape[0] != 100:
+                continue
+            pred = self.predict_on_batch(sess, batch[0])
             loss, grad_norm = self.train_on_batch(sess, *batch)
             losses.append(loss)
             grad_norms.append(grad_norm)
-            prog.update(i + 1, [("train loss", loss)])
+            prog.update(i + 1, [("train loss", loss), ("train grad", grad_norm)])
 
         return losses, grad_norms
 

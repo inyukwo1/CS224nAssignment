@@ -105,7 +105,7 @@ def pad_sequences(data, max_length):
         sen_len = len(sentence)
         new_sentence = sentence[:max_length] + [zero_vector] * (max_length - sen_len)
         new_label = labels[:max_length] + [zero_label] * (max_length - sen_len)
-        mask = [True] * sen_len + [False] * (max_length - sen_len)
+        mask = ([True] * sen_len)[:max_length] + [False] * (max_length - sen_len)
         ret.append((new_sentence, new_label, mask))
     return ret
 
@@ -306,7 +306,8 @@ class RNNModel(NERModel):
             loss: A 0-d tensor (scalar)
         """
         ### YOUR CODE HERE (~2-4 lines)
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels_placeholder, logits=preds)
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.boolean_mask(self.labels_placeholder, self.mask_placeholder),
+                                                              logits=tf.boolean_mask(preds, self.mask_placeholder))
         loss = tf.reduce_mean(loss)
         ### END YOUR CODE
         return loss
